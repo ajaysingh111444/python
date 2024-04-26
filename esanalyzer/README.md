@@ -31,3 +31,7 @@ The Python Emotion and Sentiment Analysis library you've been looking for.
 	
 
 ```
+
+
+## Package Stats
+https://pypistats.org/packages/esanalyzer
