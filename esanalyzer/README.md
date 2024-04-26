@@ -3,8 +3,9 @@ The Python Emotion and Sentiment Analysis library you've been looking for.
 
 
 ## Services
-- Emotion Analysis
-- Sentiment Analysis
+- Emotion Analysis("fear", "anger", "surprise", "sadness", "disgust", "joy")
+- Sentiment Analysis("Positive","Negative")
+- Multi Language Support
 
 
 ## Usage
@@ -14,13 +15,13 @@ The Python Emotion and Sentiment Analysis library you've been looking for.
 ```python 
 
 
-	from esanalyzer.emotion_analyzer import EmotionAnalyzer
+	from esanalyzer import EmotionAnalyzer
 
 	# Create an instance of EmotionAnalyzer
 	analyzer = EmotionAnalyzer()
 
 	# Call the analyze method with the text
-	text = "This is a test text."
+	text = "Wow, I am so happy"
 	result = analyzer.analyze(text)
 
 	# Use the result as needed
