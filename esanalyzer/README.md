@@ -27,5 +27,7 @@ The Python Emotion and Sentiment Analysis library you've been looking for.
 	# Use the result as needed
 	print(result)
 	
+	{'library': 'default', 'result': {'surprise': 80}, 'max_prediction': {'label': 'surprise', 'percentage': 80}, 'sentiment': 'Positive', 'sentiment_score': 0.999592125415802, 'threshold_value': 0.8}
+	
 
 ```
