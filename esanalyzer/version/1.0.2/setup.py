@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='esanalyzer',
-    version='1.0.5',
+    version='1.0.4',
     author='Ajay Singh Rajput',
     description='Emotion("fear", "anger", "surprise", "sadness", "disgust", "joy") and Sentiment("Positive","Negative") Analysis',
-    url='https://github.com/ajaysingh111444/python/tree/esanalyzer/esanalyzer/version/1.0.5',
+    url='https://github.com/ajaysingh111444/python/tree/esanalyzer/esanalyzer',
     long_description="""# esanalyzer
 
     The Python Emotion and Sentiment Analysis library you've been looking for.
@@ -42,14 +42,14 @@ setup(
     py_modules=["esanalyzer"],
     packages=find_packages(),
     install_requires=[
-        'nrclex==3.0.0',
-        'datasets==2.16.1',
-        'scikit-learn==1.3.2',
-        'pandas==2.1.4',
-        'numpy==1.26.3',
+        'nrclex',
+        'datasets',
+        'scikit-learn',
+        'pandas',
+        'numpy',
         'googletrans==4.0.0-rc1',
-        'transformers==4.36.2',
-        'nltk==3.8.1'
+        'transformers',
+        'nltk'
     ],
     package_dir={'':'esanalyzer/src'}
     # Include other metadata like description, author, etc.

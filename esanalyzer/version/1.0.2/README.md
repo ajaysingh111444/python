@@ -32,17 +32,6 @@ The Python Emotion and Sentiment Analysis library you've been looking for.
 
 ```
 
-## Required dependencies: 
-'nrclex==3.0.0',
-'datasets==2.16.1',
-'scikit-learn==1.3.2',
-'pandas==2.1.4',
-'numpy==1.26.3',
-'googletrans==4.0.0-rc1',
-'transformers==4.36.2',
-'nltk==3.8.1'
-
-
 
 ## Package Stats
 https://pypistats.org/packages/esanalyzer
