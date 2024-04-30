@@ -1,6 +1,6 @@
 #import os
-import sys
-import json
+#import sys
+#import json
 #import sklearn
 import requests
 import numpy as np
@@ -9,7 +9,7 @@ from io import StringIO
 from sklearn import svm
 from nrclex import NRCLex
 from datasets import load_dataset
-from textblob import TextBlob
+#from textblob import TextBlob
 from collections import Counter
 from transformers import pipeline
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
@@ -313,45 +313,6 @@ class EmotionClassifierDatasets:
 ################ ANALYZER-4 END ############################
 
 ################ SENTIMENT ANALYZER START ############################
-
-class SentimentAnalyzerNLTK:
-    def __init__(self, text):
-        self.text = text
-        #self.sia = SentimentIntensityAnalyzer()
-
-    def analyze_sentiment(self):
-        sentiment_score = self.sia.polarity_scores(self.text)['compound']
-
-        if sentiment_score > 0:
-            sentiment = 'Positive'
-        elif sentiment_score < 0:
-            sentiment = 'Negative'
-        else:
-            sentiment = 'Neutral'
-            
-        return sentiment, sentiment_score
-
-class SentimentAnalyzerOLD:
-    def __init__(self, text):
-        self.text = text
-
-    def analyze_sentiment(self):
-        # Create a TextBlob object
-        blob = TextBlob(self.text)
-
-        # Get the sentiment polarity (-1 to 1) and subjectivity (0 to 1)
-        sentiment_polarity = blob.sentiment.polarity
-        #sentiment_subjectivity = blob.sentiment.subjectivity
-
-        # Determine the sentiment based on polarity
-        if sentiment_polarity > 0:
-            sentiment = 'Positive'
-        elif sentiment_polarity < 0:
-            sentiment = 'Negative'
-        else:
-            sentiment = 'Neutral'
-        return sentiment, sentiment_polarity
-
 class SentimentAnalyzerTransformers:
     def __init__(self):
         self.sentiment_pipeline = pipeline('sentiment-analysis')
@@ -384,7 +345,7 @@ def get_threshold(sentiment, score):
         
     return threshold
 
-def main(new_text):
+def main(config, new_text):
     # Check if a command-line argument is provided
     #if len(sys.argv) > 1:
         # Retrieve the text input from the command line
@@ -394,151 +355,156 @@ def main(new_text):
     #    new_text = "Empty Text"
     #sentiment_analyzer = SentimentAnalyzer(new_text)
     #sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment()
+   
     #TRANSALTE TEXT INTO ENGLISH
-    translated = translator.translate(new_text, dest='en')
-    new_text = translated.text
+    #APPLY GOOGLE TRANSLATE ONLY WHEN IT IS True
+    if config.get('googleTranslate', True):
+        translated = translator.translate(new_text, dest='en')
+        new_text = translated.text
+   
     new_text = new_text[:1500]
     sentiment_analyzer = SentimentAnalyzerTransformers()
     sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment(new_text)
-    #print(sentiment, sentiment_score)
-
-    # Define possible positive, negative, and neutral emotions with threshold values
-    possible_positive_emotions = {"joy": 0.6, "surprise": 0.8}
-    possible_negative_emotions = {"fear": 0.1, "anger": 0.2, "disgust": 0.3, "sadness": 0.4, "anger,sadness":0.5}
-    possible_neutral_emotions = {"neutral": 0.0}
-
-    analyzers = [
-        (EmotionAnalyzerLeXmo, {"desired_emotions": possible_positive_emotions, "desired_sentiments": {}}),
-        (EmotionAnalyzerNRCLex, {"desired_emotions": possible_positive_emotions}),
-        (EmotionAnalyzerWordNet, {"target_emotions": ["fear", "anger", "surprise", "sadness", "disgust", "joy"]}),
-        (EmotionClassifierDatasets, {}),
-    ]
     threshold_value = get_threshold(sentiment, sentiment_score)
+    #print(sentiment, sentiment_score)
+    
     final_result = {
-        "library": "default",
-        "result": {},
-        "max_prediction": {"label": "", "percentage": 0},
+        "library": "esanalyzer",
         "sentiment": sentiment,
         "sentiment_score": sentiment_score,
         "threshold_value":threshold_value
     }
-    
-    found_valid_emotions = False
-    all_analyzers_results = []
-    for analyzer_cls, init_args in analyzers:
-        # Create an instance of the analyzer
-        analyzer_instance = analyzer_cls(**init_args)
 
-        # Call the analyze method
-        emotions = analyzer_instance.analyze(new_text)
-        #print(analyzer_cls)
-        #print(emotions)
-        if emotions is not None:
-            emotions.update({"sentiment": sentiment, "sentiment_score": sentiment_score})
-            all_analyzers_results.append(emotions)
-            max_prediction_label = emotions.get("max_prediction", {}).get("label", "")
-            max_prediction_percentage = emotions.get("max_prediction", {}).get("percentage", 0)
+    #IF SENTIMENT IS ENABLED
+    if config.get('emotions', True):
+        # Define possible positive, negative, and neutral emotions with threshold values
+        possible_positive_emotions = {"joy": 0.6, "surprise": 0.8}
+        possible_negative_emotions = {"fear": 0.1, "anger": 0.2, "disgust": 0.3, "sadness": 0.4, "anger,sadness":0.5}
+        possible_neutral_emotions = {"neutral": 0.0}
 
-            # Validate emotions based on sentiment and possible emotions
-            if(sentiment == "Positive" and max_prediction_label in possible_positive_emotions):
-                found_valid_emotions = True
-                final_result = emotions
-                break  # Stop calling other analyzers if the emotions are valid
-            elif(sentiment == "Negative" and max_prediction_label in possible_negative_emotions):
-                found_valid_emotions = True
-                final_result = emotions
-                break  # Stop calling other analyzers if the emotions are valid
-            elif(sentiment == "Neutral" and max_prediction_label in possible_neutral_emotions):
-                found_valid_emotions = True
-                final_result = emotions
-                break  # Stop calling other analyzers if the emotions are valid
-    #print("all_analyzers_results")
-    #print(all_analyzers_results)
-    all_analyzers_results = []
-    if not found_valid_emotions:
-        if not all_analyzers_results:
-            if sentiment == "Positive":
-                # If sentiment is positive, choose max prediction label from possible_positive_emotions
-                max_prediction_label = max(possible_positive_emotions, key=possible_positive_emotions.get)
-                max_prediction_percentage = possible_positive_emotions[max_prediction_label]
-            elif sentiment == "Negative":
-                # If sentiment is negative, choose max prediction label from possible_negative_emotions
-                max_prediction_label = max(possible_negative_emotions, key=possible_negative_emotions.get)
-                max_prediction_percentage = possible_negative_emotions[max_prediction_label]
-            elif sentiment == "Neutral":
-                # If sentiment is neutral, choose max prediction label from possible_neutral_emotions
-                max_prediction_label = max(possible_neutral_emotions, key=possible_neutral_emotions.get)
-                max_prediction_percentage = possible_neutral_emotions[max_prediction_label]
-
-            # No valid emotions found, generate default result for the max prediction label and percentage
-            max_prediction_percentage = round(abs(max_prediction_percentage * 100))
-            final_result["max_prediction"]["label"] = max_prediction_label
-            final_result["max_prediction"]["percentage"] = max_prediction_percentage
-            final_result["result"] = {max_prediction_label: max_prediction_percentage}
-            
-        else:
-            max_prediction_labels = [result.get("max_prediction", {}).get("label", "") for result in all_analyzers_results]
-
-            # Use Counter to find the most common label
-            most_common_labels = Counter(max_prediction_labels).most_common()
-            #print("most_common_labels")
-            #print(most_common_labels)
-            
-            # After choosing the most common labels
-            max_prediction_labels = [label for label, _ in most_common_labels]
-
-            # Separate the labels based on emotion categories
-            positive_labels = [label for label in max_prediction_labels if label in possible_positive_emotions]
-            negative_labels = [label for label in max_prediction_labels if label in possible_negative_emotions]
-            neutral_labels = [label for label in max_prediction_labels if label in possible_neutral_emotions]
-            
-            # Choose the label based on the emotion category with the highest score
-            if positive_labels:
-                chosen_labels = positive_labels
-            elif negative_labels:
-                chosen_labels = negative_labels
-            elif neutral_labels:
-                chosen_labels = neutral_labels
-            else:
-                # Handle the case where no valid emotion category is found
-                chosen_labels = []
-
-
-            # Extract sentiment, sentiment_score, and percentage based on max_prediction_label
-            if max_prediction_label in possible_positive_emotions:
-                sentiment = "Positive"
-                sentiment_score = possible_positive_emotions[max_prediction_label]
-            elif max_prediction_label in possible_negative_emotions:
-                sentiment = "Negative"
-                sentiment_score = possible_negative_emotions[max_prediction_label]
-            elif max_prediction_label in possible_neutral_emotions:
-                sentiment = "Neutral"
-                sentiment_score = possible_neutral_emotions[max_prediction_label]
-            else:
-                # Handle the case where max_prediction_label is not found in any emotion dictionary
-                sentiment = "Unknown"
-                sentiment_score = 0.0
-
-            # Use the chosen values to populate the final result
-            max_prediction_percentage = round(abs(sentiment_score * 100))
-            final_result["library"] = "voting"
-            final_result["max_prediction"]["label"] = ", ".join(chosen_labels)
-            final_result["max_prediction"]["percentage"] = max_prediction_percentage
-            final_result["result"] = {label: max_prediction_percentage for label in chosen_labels}
-            final_result["sentiment"] = sentiment
-            final_result["sentiment_score"] = sentiment_score
-
-
-    #IF PERCENTAGE IS LESS THAN 11
-    #final_result["sentiment_score"] = round(final_result["sentiment_score"], 2)
-    if final_result["max_prediction"]["percentage"] < 11:
-        final_result["max_prediction"]["percentage"] *= 10
-        final_result["max_prediction"]["percentage"] = round(final_result["max_prediction"]["percentage"], 2)
+        analyzers = [
+            (EmotionAnalyzerLeXmo, {"desired_emotions": possible_positive_emotions, "desired_sentiments": {}}),
+            (EmotionAnalyzerNRCLex, {"desired_emotions": possible_positive_emotions}),
+            (EmotionAnalyzerWordNet, {"target_emotions": ["fear", "anger", "surprise", "sadness", "disgust", "joy"]}),
+            (EmotionClassifierDatasets, {}),
+        ]
         
-        if final_result["max_prediction"]["percentage"] > 100:
-            final_result["max_prediction"]["percentage"] = 100
-            
+        found_valid_emotions = False
+        all_analyzers_results = []
+        for analyzer_cls, init_args in analyzers:
+            # Create an instance of the analyzer
+            analyzer_instance = analyzer_cls(**init_args)
+
+            # Call the analyze method
+            emotions = analyzer_instance.analyze(new_text)
+            #print(analyzer_cls)
+            #print(emotions)
+            if emotions is not None:
+                emotions.update({"sentiment": sentiment, "sentiment_score": sentiment_score})
+                all_analyzers_results.append(emotions)
+                max_prediction_label = emotions.get("max_prediction", {}).get("label", "")
+                max_prediction_percentage = emotions.get("max_prediction", {}).get("percentage", 0)
+
+                # Validate emotions based on sentiment and possible emotions
+                if(sentiment == "Positive" and max_prediction_label in possible_positive_emotions):
+                    found_valid_emotions = True
+                    final_result = emotions
+                    break  # Stop calling other analyzers if the emotions are valid
+                elif(sentiment == "Negative" and max_prediction_label in possible_negative_emotions):
+                    found_valid_emotions = True
+                    final_result = emotions
+                    break  # Stop calling other analyzers if the emotions are valid
+                elif(sentiment == "Neutral" and max_prediction_label in possible_neutral_emotions):
+                    found_valid_emotions = True
+                    final_result = emotions
+                    break  # Stop calling other analyzers if the emotions are valid
+        #print("all_analyzers_results")
+        #print(all_analyzers_results)
+        all_analyzers_results = []
+        if not found_valid_emotions:
+            if not all_analyzers_results:
+                if sentiment == "Positive":
+                    # If sentiment is positive, choose max prediction label from possible_positive_emotions
+                    max_prediction_label = max(possible_positive_emotions, key=possible_positive_emotions.get)
+                    max_prediction_percentage = possible_positive_emotions[max_prediction_label]
+                elif sentiment == "Negative":
+                    # If sentiment is negative, choose max prediction label from possible_negative_emotions
+                    max_prediction_label = max(possible_negative_emotions, key=possible_negative_emotions.get)
+                    max_prediction_percentage = possible_negative_emotions[max_prediction_label]
+                elif sentiment == "Neutral":
+                    # If sentiment is neutral, choose max prediction label from possible_neutral_emotions
+                    max_prediction_label = max(possible_neutral_emotions, key=possible_neutral_emotions.get)
+                    max_prediction_percentage = possible_neutral_emotions[max_prediction_label]
+
+                # No valid emotions found, generate default result for the max prediction label and percentage
+                max_prediction_percentage = round(abs(max_prediction_percentage * 100))
+                final_result["max_prediction"]["label"] = max_prediction_label
+                final_result["max_prediction"]["percentage"] = max_prediction_percentage
+                final_result["result"] = {max_prediction_label: max_prediction_percentage}
                 
+            else:
+                max_prediction_labels = [result.get("max_prediction", {}).get("label", "") for result in all_analyzers_results]
+
+                # Use Counter to find the most common label
+                most_common_labels = Counter(max_prediction_labels).most_common()
+                #print("most_common_labels")
+                #print(most_common_labels)
+                
+                # After choosing the most common labels
+                max_prediction_labels = [label for label, _ in most_common_labels]
+
+                # Separate the labels based on emotion categories
+                positive_labels = [label for label in max_prediction_labels if label in possible_positive_emotions]
+                negative_labels = [label for label in max_prediction_labels if label in possible_negative_emotions]
+                neutral_labels = [label for label in max_prediction_labels if label in possible_neutral_emotions]
+                
+                # Choose the label based on the emotion category with the highest score
+                if positive_labels:
+                    chosen_labels = positive_labels
+                elif negative_labels:
+                    chosen_labels = negative_labels
+                elif neutral_labels:
+                    chosen_labels = neutral_labels
+                else:
+                    # Handle the case where no valid emotion category is found
+                    chosen_labels = []
+
+
+                # Extract sentiment, sentiment_score, and percentage based on max_prediction_label
+                if max_prediction_label in possible_positive_emotions:
+                    sentiment = "Positive"
+                    sentiment_score = possible_positive_emotions[max_prediction_label]
+                elif max_prediction_label in possible_negative_emotions:
+                    sentiment = "Negative"
+                    sentiment_score = possible_negative_emotions[max_prediction_label]
+                elif max_prediction_label in possible_neutral_emotions:
+                    sentiment = "Neutral"
+                    sentiment_score = possible_neutral_emotions[max_prediction_label]
+                else:
+                    # Handle the case where max_prediction_label is not found in any emotion dictionary
+                    sentiment = "Unknown"
+                    sentiment_score = 0.0
+
+                # Use the chosen values to populate the final result
+                max_prediction_percentage = round(abs(sentiment_score * 100))
+                final_result["library"] = "voting"
+                final_result["max_prediction"]["label"] = ", ".join(chosen_labels)
+                final_result["max_prediction"]["percentage"] = max_prediction_percentage
+                final_result["result"] = {label: max_prediction_percentage for label in chosen_labels}
+                final_result["sentiment"] = sentiment
+                final_result["sentiment_score"] = sentiment_score
+
+
+        #IF PERCENTAGE IS LESS THAN 11
+        #final_result["sentiment_score"] = round(final_result["sentiment_score"], 2)
+        if final_result["max_prediction"]["percentage"] < 11:
+            final_result["max_prediction"]["percentage"] *= 10
+            final_result["max_prediction"]["percentage"] = round(final_result["max_prediction"]["percentage"], 2)
+            
+            if final_result["max_prediction"]["percentage"] > 100:
+                final_result["max_prediction"]["percentage"] = 100
+                
+                    
     return  final_result
     #print(json.dumps(final_result))
 
@@ -547,10 +513,13 @@ def main(new_text):
 #    main()
 
 class EmotionAnalyzer:
-    @staticmethod
-    def analyze(text):
+    def __init__(self, config):
+        self.config = config
+        #print(self.config)
+    #@staticmethod
+    def analyze(self, text):
         # Call the main function and pass the text
-        result = main(text)
+        result = main(self.config, text)
         return result
         
 ################ SENTIMENT ANALYZER END ############################
