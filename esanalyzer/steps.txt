@@ -2,9 +2,11 @@
 2. python setup.py sdist bdist_wheel
 3. python install . OR python setup.py install
 4. pip show esanalyzer
-5. twine upload dist/*
+5. twine upload dist/* OR twine upload --verbose dist/*
 6. Paste twine API Token
 
 
 
 API Token: pypi-AgEIcHlwaS5vcmcCJGNlMjgxNTVmLWEyNmEtNGM1OC05YmZlLTBkMzAzMTM5OGE1NwACKlszLCI5Zjk5YTBhYS1iYWFiLTRlZjMtOGNmMS1kZWJiM2Q1MDE4MGMiXQAABiANpBoj_pbszhzcxA0L8dQzruAsX031q29lC1PIqbzvKg
+
+pypi-AgEIcHlwaS5vcmcCJDZmMTZhNGMzLTNjYzQtNGE0ZS05NGJlLTg0NTRlYjlkNDI0NAACElsxLFsiZXNhbmFseXplciJdXQACLFsyLFsiMGViNmI5MWItZDQ1OC00Njk4LTg0MzYtMjQ3MGRjY2VkYTkzIl1dAAAGIG7EnphgnOSvCJ-G-exv9M6IzJGP-bCRGG7XI0YXUsWc
