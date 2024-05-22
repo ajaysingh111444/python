@@ -355,6 +355,9 @@ def main(config, new_text):
     #    new_text = "Empty Text"
     #sentiment_analyzer = SentimentAnalyzer(new_text)
     #sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment()
+    
+    if len(new_text) == 0:
+        new_text="Wow, I am so happy."
    
     #TRANSALTE TEXT INTO ENGLISH
     #APPLY GOOGLE TRANSLATE ONLY WHEN IT IS True
