@@ -2,6 +2,7 @@
 #import sys
 #import json
 #import sklearn
+import re
 import requests
 import numpy as np
 import pandas as pd
@@ -345,6 +346,11 @@ def get_threshold(sentiment, score):
         
     return threshold
 
+def fix_string_issue(s):
+    # Replace periods between words with a space
+    fixed_s = re.sub(r'\.(?=\w)', ' ', s)
+    return fixed_s
+
 def main(config, new_text):
     # Check if a command-line argument is provided
     #if len(sys.argv) > 1:
@@ -359,13 +365,16 @@ def main(config, new_text):
     if len(new_text) == 0:
         new_text="Wow, I am so happy."
    
+    new_text = new_text[:1500]
+    new_text = fix_string_issue(new_text)
+    
     #TRANSALTE TEXT INTO ENGLISH
     #APPLY GOOGLE TRANSLATE ONLY WHEN IT IS True
     if config.get('googleTranslate', True):
         translated = translator.translate(new_text, dest='en')
         new_text = translated.text
    
-    new_text = new_text[:1500]
+    
     sentiment_analyzer = SentimentAnalyzerTransformers()
     sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment(new_text)
     threshold_value = get_threshold(sentiment, sentiment_score)
