@@ -2,6 +2,8 @@
 #import sys
 #import json
 #import sklearn
+import emoji
+import unicodedata
 import re
 import requests
 import numpy as np
@@ -351,6 +353,32 @@ def fix_string_issue(s):
     fixed_s = re.sub(r'\.(?=\w)', ' ', s)
     return fixed_s
 
+# Preprocessing function
+def preprocess_text(text):
+    """
+    Preprocess text to handle special characters, emojis, and multilingual input.
+    """
+    # Normalize Unicode characters (removes accents, etc.)
+    text = unicodedata.normalize('NFKD', text)
+    
+    # Normalize whitespace (remove excess spaces)
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    # Replace emojis with descriptive names (e.g., 😊 -> ' smile ')
+    text = emoji.demojize(text, delimiters=(" ", " "))  # e.g., 😊 -> ' smile '
+    
+    # Allow common special characters (e.g., '-', '/', '\', '*') and remove others
+    text = re.sub(r'[^\w\s.,!?\'"()\-:/\\*]', '', text)  # Keep only the specified characters
+    
+    return text
+
+# Emoji extractor (optional)
+def extract_emojis(text):
+    """
+    Extract emojis from text.
+    """
+    return [char for char in text if char in emoji.EMOJI_DATA]
+
 def main(config, new_text):
     # Check if a command-line argument is provided
     #if len(sys.argv) > 1:
@@ -366,7 +394,8 @@ def main(config, new_text):
         new_text="Wow, I am so happy."
    
     new_text = new_text[:1500]
-    new_text = fix_string_issue(new_text)
+    #new_text = fix_string_issue(new_text)
+    
     
     #TRANSALTE TEXT INTO ENGLISH
     #APPLY GOOGLE TRANSLATE ONLY WHEN IT IS True
@@ -374,6 +403,21 @@ def main(config, new_text):
         translated = translator.translate(new_text, dest='en')
         new_text = translated.text
    
+    # Preprocess text
+    new_text = preprocess_text(new_text)
+    
+    if not new_text:
+        # Return default if the text is empty
+        default_result = {
+            "sentiment": "Neutral",
+            "sentiment_score": 0.0,
+            "max_prediction": {
+                "label": "neutral",
+                "percentage": 100
+            }
+        }
+        #print(json.dumps(default_result, indent=2))
+        return default_result
     
     sentiment_analyzer = SentimentAnalyzerTransformers()
     sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment(new_text)
